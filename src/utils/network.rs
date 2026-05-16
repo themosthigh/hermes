@@ -3,10 +3,20 @@ use reqwest::{Client, Method};
 use serde_json;
 use serde_json::json;
 
-pub async fn send_request(url: String, method: String) -> Result<String, String> {
+use crate::request::RequestState;
+
+pub async fn send_request(request: RequestState) -> Result<String, String> {
     let client = Client::new();
+
+    // println!("Request body: {}", request.body);
+
     let response = client
-        .request(Method::from_bytes(method.as_bytes()).unwrap(), url)
+        .request(
+            Method::from_bytes(request.method.as_bytes()).unwrap(),
+            request.url,
+        )
+        .header("Content-Type", "application/json")
+        .body(request.body)
         .send()
         .await;
 

@@ -1,5 +1,5 @@
-use adw::gtk;
-use relm4::{ComponentParts, SimpleComponent};
+use adw::prelude::*;
+use relm4::{ComponentParts, SimpleComponent, gtk, prelude::*};
 
 #[derive(Debug)]
 pub struct Model {}
@@ -14,6 +14,15 @@ impl SimpleComponent for Model {
         adw::ToolbarView {
             add_top_bar = &adw::HeaderBar {
                 set_title_widget = Some(&gtk::Label::new(Some("Hermes"))),
+            },
+
+            #[wrap(Some)]
+            set_content =  &gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+
+                gtk::Label {
+                    set_label: "Testing catch watch",
+                }
             }
         }
     }

@@ -1,6 +1,6 @@
 use relm4::{gtk, gtk::prelude::*, prelude::*};
 
-use crate::constants::METHODS;
+use crate::request::METHODS;
 
 #[derive(Debug, Clone)]
 pub struct Model {
@@ -17,7 +17,8 @@ pub enum Msg {
 
 #[derive(Debug)]
 pub enum Output {
-    Send(Model),
+    Send,
+    UpdateRequestFromBar(Model),
 }
 
 #[relm4::component(pub)]
@@ -82,16 +83,21 @@ impl SimpleComponent for Model {
     fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::Send => {
-                let _ = sender.output(Output::Send(Model {
+                let _ = sender.output(Output::Send);
+            }
+            Msg::UrlChanged(url) => {
+                self.url = url;
+                let _ = sender.output(Output::UpdateRequestFromBar(Model {
                     url: self.url.clone(),
                     method: self.method.clone(),
                 }));
             }
-            Msg::UrlChanged(url) => {
-                self.url = url;
-            }
             Msg::MethodChanged(method) => {
                 self.method = method;
+                let _ = sender.output(Output::UpdateRequestFromBar(Model {
+                    url: self.url.clone(),
+                    method: self.method.clone(),
+                }));
             }
         }
     }

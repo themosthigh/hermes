@@ -4,7 +4,7 @@ use relm4::prelude::*;
 
 #[derive(Debug)]
 pub struct Model {
-    sidebar_controller: Controller<main_sidebar::Model>,
+    _sidebar_controller: Controller<main_sidebar::Model>,
     content_controller: Controller<main_content::Model>,
 }
 
@@ -23,9 +23,15 @@ impl SimpleComponent for Model {
             set_size_request: (350, 500),
             set_default_size: (800, 800),
 
-            adw::OverlaySplitView {
-                set_sidebar: Some(model.sidebar_controller.widget()),
-                set_content: Some(model.content_controller.widget()),
+            // TODO: Support multiple requests in tabs
+            // adw::OverlaySplitView {
+            //     set_sidebar: Some(model.sidebar_controller.widget()),
+            //     set_content: Some(model.content_controller.widget()),
+            // }
+
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                append: model.content_controller.widget(),
             }
         }
     }
@@ -37,7 +43,7 @@ impl SimpleComponent for Model {
     ) -> relm4::ComponentParts<Self> {
         let model = Model {
             // init content
-            sidebar_controller: main_sidebar::Model::builder().launch(()).detach(),
+            _sidebar_controller: main_sidebar::Model::builder().launch(()).detach(),
             content_controller: main_content::Model::builder().launch(()).detach(),
         };
         let widgets = view_output!();

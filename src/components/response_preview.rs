@@ -1,6 +1,8 @@
 use relm4::{gtk, gtk::prelude::*, prelude::*};
 use sourceview5::prelude::*;
 
+use crate::utils::sourceview::init_source_buffer;
+
 #[derive(Debug)]
 pub struct Model {
     response: String,
@@ -22,7 +24,7 @@ impl SimpleComponent for Model {
 
         gtk::ScrolledWindow {
             set_vexpand: true,
-            set_hscrollbar_policy: gtk::PolicyType::Never,
+            set_hscrollbar_policy: gtk::PolicyType::Automatic,
             set_vscrollbar_policy: gtk::PolicyType::Automatic,
 
             #[name="text_view"]
@@ -60,17 +62,4 @@ impl SimpleComponent for Model {
             }
         }
     }
-}
-
-fn init_source_buffer() -> sourceview5::Buffer {
-    let buffer = sourceview5::Buffer::new(None);
-    let lang_manager = sourceview5::LanguageManager::default();
-    if let Some(rust_lang) = lang_manager.language("json") {
-        buffer.set_language(Some(&rust_lang));
-    }
-    let scheme_manager = sourceview5::StyleSchemeManager::default();
-    if let Some(theme_scheme) = scheme_manager.scheme("Adwaita-dark") {
-        buffer.set_style_scheme(Some(&theme_scheme));
-    }
-    buffer
 }
