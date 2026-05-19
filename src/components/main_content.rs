@@ -240,8 +240,8 @@ impl SimpleComponent for Model {
                                 let _ = sender.input(Msg::UpdateResponse(Some(response)));
                             }
                             Err(error) => {
-                                let _ =
-                                    sender.input(Msg::UpdateResponsePreview(format_json(error)));
+                                let _ = sender
+                                    .input(Msg::UpdateResponsePreview(format_json(error).unwrap()));
                             }
                         };
                     });
@@ -264,8 +264,15 @@ impl SimpleComponent for Model {
                     None => &String::from("No response"),
                 };
                 let formatted_preview = format_json(preview.to_string());
-                sender.input(Msg::UpdateResponsePreview(formatted_preview));
-
+                match formatted_preview {
+                    Ok(formatted_preview) => {
+                        sender.input(Msg::UpdateResponsePreview(formatted_preview));
+                    }
+                    Err(error) => {
+                        println!("Formatting error: {}", error);
+                        sender.input(Msg::UpdateResponsePreview(preview.to_string()));
+                    }
+                }
                 // update headers
                 let headers = match &self.response {
                     Some(response) => response.headers.clone(),

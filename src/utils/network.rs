@@ -2,7 +2,6 @@ use reqwest::{
     Client, Method,
     header::{HeaderMap, HeaderName, HeaderValue},
 };
-use serde_json::json;
 
 use crate::request::{RequestState, ResponseState};
 
@@ -50,23 +49,22 @@ pub async fn send_request(request: RequestState) -> Result<ResponseState, String
     }
 }
 
-pub fn format_json(json: String) -> String {
-    let json_value: serde_json::Value = serde_json::from_str(&json).unwrap_or_else(|error| {
-        json!({
-            "hermes_error": error.to_string(),
-            "message": "Failed to parse JSON value",
-            "text": json
-        })
-    });
+pub fn format_json(json: String) -> Result<String, String> {
+    let json_value: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&json);
 
-    // format JSON
-    let formatted = serde_json::to_string_pretty(&json_value).unwrap_or_else(|error| {
-        format!(
-            "Failed to format JSON\nError: {}\nText: {}",
-            error.to_string(),
-            json
-        )
-    });
-
-    return formatted;
+    match json_value {
+        Ok(parsed_value) => {
+            let formatted = serde_json::to_string_pretty(&parsed_value).unwrap_or_else(|error| {
+                format!(
+                    "Failed to format JSON\nError: {}\nText: {}",
+                    error.to_string(),
+                    json
+                )
+            });
+            return Ok(formatted);
+        }
+        Err(error) => {
+            return Err(error.to_string());
+        }
+    }
 }
