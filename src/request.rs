@@ -27,6 +27,11 @@ impl Default for RequestState {
                     value: String::from("application/json"),
                     enabled: true,
                 },
+                RequestHeader {
+                    name: String::from("Accept"),
+                    value: String::from("application/json"),
+                    enabled: true,
+                },
             ],
             body: String::new(),
         }
