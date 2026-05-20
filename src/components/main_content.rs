@@ -1,17 +1,23 @@
+use std::sync::Arc;
+
 use adw::prelude::*;
 use relm4::prelude::*;
 
 use crate::{
     components::{
-        request_bar, request_body, request_headers, request_params, response_headers,
+        app_header, request_bar, request_body, request_headers, request_params, response_headers,
         response_preview,
     },
     request::{RequestHeader, RequestState, ResponseState},
-    utils::network::{format_json, send_request},
+    utils::{
+        network::{format_json, send_request},
+        store::LocalStore,
+    },
 };
 
 #[derive(Debug)]
 pub struct Model {
+    app_header_widget: Controller<app_header::Model>,
     request_bar_widget: Controller<request_bar::Model>,
     request_headers_widget: Controller<request_headers::Model>,
     request_params_widget: Controller<request_params::Model>,
@@ -27,7 +33,7 @@ pub struct Model {
 pub enum Msg {
     SendRequest,
     UpdateRequest(RequestState),
-    UpdateRequestFromBar(request_bar::Model),
+    UpdateRequestFromBar(request_bar::OutputData),
     UpdateRequestBody(String),
     UpdateResponsePreview(String),
     UpdateResponse(Option<ResponseState>),
@@ -42,11 +48,7 @@ impl SimpleComponent for Model {
 
     view! {
         adw::ToolbarView {
-            add_top_bar = &adw::HeaderBar{
-                set_css_classes: &["flat"],
-                set_hexpand: true,
-                set_title_widget = Some(&gtk::Label::new(Some("Hermes"))),
-            },
+            add_top_bar = model.app_header_widget.widget(),
 
             #[wrap(Some)]
             set_content = &gtk::Box {
@@ -110,11 +112,13 @@ impl SimpleComponent for Model {
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let request = RequestState::default();
+        let request_store = Arc::new(LocalStore::new(request.clone()));
 
         let req = request_bar::Model::builder()
             .launch(request_bar::Model {
                 url: request.url.clone(),
                 method: request.method.clone(),
+                request_store: request_store.clone(),
             })
             .forward(sender.input_sender(), |req_output| match req_output {
                 // get request from request bar
@@ -151,6 +155,11 @@ impl SimpleComponent for Model {
 
         // Initialise Main Content Model
         let model = Model {
+            app_header_widget: app_header::Model::builder()
+                .launch(app_header::Init {
+                    request_store: request_store.clone(),
+                })
+                .detach(),
             request_bar_widget: req,
             request_body_widget: req_body,
             request_headers_widget,

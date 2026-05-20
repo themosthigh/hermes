@@ -1,11 +1,17 @@
+use std::sync::Arc;
+
 use relm4::{gtk, gtk::prelude::*, prelude::*};
 
-use crate::{request::METHODS, utils::shortcut::register_shortcut};
+use crate::{
+    request::{METHODS, RequestState},
+    utils::{shortcut::register_shortcut, store::LocalStore},
+};
 
 #[derive(Debug, Clone)]
 pub struct Model {
     pub url: String,
     pub method: String,
+    pub request_store: Arc<LocalStore<RequestState>>,
 }
 
 #[derive(Debug)]
@@ -16,9 +22,15 @@ pub enum Msg {
 }
 
 #[derive(Debug)]
+pub struct OutputData {
+    pub url: String,
+    pub method: String,
+}
+
+#[derive(Debug)]
 pub enum Output {
     Send,
-    UpdateRequestFromBar(Model),
+    UpdateRequestFromBar(OutputData),
 }
 
 #[relm4::component(pub)]
@@ -75,10 +87,7 @@ impl SimpleComponent for Model {
         root: Self::Root,
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
-        let model = Model {
-            url: intial_values.url,
-            method: intial_values.method,
-        };
+        let model = intial_values;
         let widgets = view_output!();
 
         // Focus entry on ctrl+l
@@ -102,14 +111,17 @@ impl SimpleComponent for Model {
             }
             Msg::UrlChanged(url) => {
                 self.url = url;
-                let _ = sender.output(Output::UpdateRequestFromBar(Model {
+                let _ = sender.output(Output::UpdateRequestFromBar(OutputData {
                     url: self.url.clone(),
                     method: self.method.clone(),
                 }));
+                self.request_store.update(|request_state| {
+                    request_state.url = self.url.clone();
+                });
             }
             Msg::MethodChanged(method) => {
                 self.method = method;
-                let _ = sender.output(Output::UpdateRequestFromBar(Model {
+                let _ = sender.output(Output::UpdateRequestFromBar(OutputData {
                     url: self.url.clone(),
                     method: self.method.clone(),
                 }));
