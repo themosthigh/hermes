@@ -2,17 +2,15 @@ use std::sync::Arc;
 
 use adw::prelude::*;
 use relm4::prelude::*;
+use tokio::runtime::Handle;
 
 use crate::{
     components::{
         app_header, request_bar, request_body, request_headers, request_params, response_headers,
         response_preview,
     },
-    request::{RequestHeader, RequestState, ResponseState},
-    utils::{
-        network::{format_json, send_request},
-        store::LocalStore,
-    },
+    request::{RequestState, ResponseState},
+    utils::{network::send_request, store::LocalStore},
 };
 
 #[derive(Debug)]
@@ -24,20 +22,15 @@ pub struct Model {
     request_body_widget: Controller<request_body::Model>,
     response_preview_widget: Controller<response_preview::Model>,
     response_headers_widget: Controller<response_headers::Model>,
-    request: RequestState,
-    response: Option<ResponseState>,
-    response_preview: String,
+
+    // stores
+    request_store: Arc<LocalStore<RequestState>>,
+    response_store: Arc<LocalStore<ResponseState>>,
 }
 
 #[derive(Debug)]
 pub enum Msg {
     SendRequest,
-    UpdateRequest(RequestState),
-    UpdateRequestFromBar(request_bar::OutputData),
-    UpdateRequestBody(String),
-    UpdateResponsePreview(String),
-    UpdateResponse(Option<ResponseState>),
-    UpdateRequestHeaders(Vec<RequestHeader>),
 }
 
 #[relm4::component(pub)]
@@ -113,44 +106,28 @@ impl SimpleComponent for Model {
     ) -> relm4::ComponentParts<Self> {
         let request = RequestState::default();
         let request_store = Arc::new(LocalStore::new(request.clone()));
+        let response_store = Arc::new(LocalStore::new(ResponseState::default()));
 
         let req = request_bar::Model::builder()
-            .launch(request_bar::Model {
-                url: request.url.clone(),
-                method: request.method.clone(),
-                request_store: request_store.clone(),
-            })
+            .launch(request_store.clone())
             .forward(sender.input_sender(), |req_output| match req_output {
-                // get request from request bar
-                request_bar::Output::Send => Msg::SendRequest,
-                request_bar::Output::UpdateRequestFromBar(req) => Msg::UpdateRequestFromBar(req),
+                request_bar::Output::EmitSend => Msg::SendRequest,
             });
 
         let req_body = request_body::Model::builder()
-            .launch(request_body::Init {
-                request_body: String::from("{}"),
-            })
-            .forward(
-                sender.input_sender(),
-                |req_body_output| match req_body_output {
-                    request_body::Output::UpdateRequestBody(body) => Msg::UpdateRequestBody(body),
-                },
-            );
+            .launch(request_store.clone())
+            .detach();
 
         let request_headers_widget = request_headers::Model::builder()
             .launch(request.headers.clone())
-            .forward(sender.input_sender(), |output| match output {
-                request_headers::Output::EmitHeadersChanged(headers) => {
-                    Msg::UpdateRequestHeaders(headers)
-                }
-            });
+            .detach();
 
         let res = response_preview::Model::builder()
-            .launch(String::from("Response preview section"))
+            .launch(response_store.clone())
             .detach();
 
         let res_headers = response_headers::Model::builder()
-            .launch(Vec::new())
+            .launch(response_store.clone())
             .detach();
 
         // Initialise Main Content Model
@@ -166,9 +143,9 @@ impl SimpleComponent for Model {
             request_params_widget: request_params::Model::builder().launch(()).detach(),
             response_headers_widget: res_headers,
             response_preview_widget: res,
-            response_preview: String::new(),
-            request: request.clone(),
-            response: None,
+            // stores
+            request_store: request_store.clone(),
+            response_store: response_store.clone(),
         };
 
         let widgets = view_output!();
@@ -220,77 +197,30 @@ impl SimpleComponent for Model {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
-            Msg::UpdateRequest(request) => {
-                self.request = request;
-            }
-            Msg::UpdateRequestFromBar(req_bar_model) => {
-                self.request.url = req_bar_model.url;
-                self.request.method = req_bar_model.method;
-            }
-            Msg::UpdateRequestHeaders(headers) => {
-                self.request.headers = headers.clone();
-            }
-            Msg::UpdateRequestBody(body) => {
-                self.request.body = body;
-            }
             Msg::SendRequest => {
                 // Show loading state
-                sender.input(Msg::UpdateResponsePreview(String::from("Loading...")));
-                let req = self.request.clone();
+                let req = self.request_store.get_current();
 
                 // Send request
-                sender
-                    .clone()
-                    .command(move |_sender, _shutdown| async move {
-                        match send_request(req).await {
-                            Ok(response) => {
-                                let _ = sender.input(Msg::UpdateResponse(Some(response)));
-                            }
-                            Err(error) => {
-                                let _ = sender
-                                    .input(Msg::UpdateResponsePreview(format_json(error).unwrap()));
-                            }
-                        };
-                    });
-            }
-            Msg::UpdateResponsePreview(text) => {
-                self.response_preview = text;
-                let _ = self
-                    .response_preview_widget
-                    .sender()
-                    .send(response_preview::Msg::Update(
-                        self.response_preview.to_string(),
-                    ));
-            }
-            Msg::UpdateResponse(response) => {
-                self.response = response;
 
-                // update preview
-                let preview = match &self.response {
-                    Some(response) => &response.body,
-                    None => &String::from("No response"),
-                };
-                let formatted_preview = format_json(preview.to_string());
-                match formatted_preview {
-                    Ok(formatted_preview) => {
-                        sender.input(Msg::UpdateResponsePreview(formatted_preview));
-                    }
-                    Err(error) => {
-                        println!("Formatting error: {}", error);
-                        sender.input(Msg::UpdateResponsePreview(preview.to_string()));
-                    }
-                }
-                // update headers
-                let headers = match &self.response {
-                    Some(response) => response.headers.clone(),
-                    None => Vec::new(),
-                };
-                let _ = self
-                    .response_headers_widget
-                    .sender()
-                    .send(response_headers::Msg::HeadersChanged(headers));
+                let handle = Handle::current();
+                let result = handle.block_on(async { send_request(req).await });
+                self.response_store.update(|state| {
+                    match result {
+                        Ok(res) => {
+                            state.status_code = res.status_code;
+                            state.headers = res.headers;
+                            state.body = res.body;
+                        }
+                        Err(error) => {
+                            state.headers = vec![];
+                            state.status_code = 0;
+                            state.body = String::from(format!("{}", error))
+                        }
+                    };
+                });
             }
         }
     }

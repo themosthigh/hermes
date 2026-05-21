@@ -1,11 +1,16 @@
+use std::sync::Arc;
+
 use relm4::{gtk, gtk::prelude::*, prelude::*};
 use sourceview5::prelude::*;
 
-use crate::utils::sourceview::init_source_buffer;
+use crate::{
+    request::ResponseState,
+    utils::{sourceview::init_source_buffer, store::LocalStore},
+};
 
 #[derive(Debug)]
 pub struct Model {
-    response: String,
+    response_store: Init,
     source_buffer: sourceview5::Buffer,
 }
 
@@ -14,9 +19,11 @@ pub enum Msg {
     Update(String),
 }
 
+pub type Init = Arc<LocalStore<ResponseState>>;
+
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
-    type Init = String;
+    type Init = Init;
     type Input = Msg;
     type Output = ();
 
@@ -42,15 +49,19 @@ impl SimpleComponent for Model {
     }
 
     fn init(
-        response: Self::Init,
+        init: Self::Init,
         root: Self::Root,
-        _sender: relm4::ComponentSender<Self>,
+        sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let model = Model {
-            response,
+            response_store: init,
             source_buffer: init_source_buffer(),
         };
         let widgets = view_output!();
+
+        model
+            .response_store
+            .connect(&sender, |response_state| Msg::Update(response_state.body));
 
         ComponentParts { model, widgets }
     }
@@ -58,8 +69,7 @@ impl SimpleComponent for Model {
     fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::Update(response) => {
-                self.response = response;
-                self.source_buffer.set_text(&self.response);
+                self.source_buffer.set_text(response.as_str());
             }
         }
     }

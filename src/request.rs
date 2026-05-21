@@ -44,3 +44,13 @@ pub struct ResponseState {
     pub headers: Vec<(String, String)>,
     pub body: String,
 }
+
+impl Default for ResponseState {
+    fn default() -> Self {
+        Self {
+            status_code: 0,
+            headers: Vec::new(),
+            body: String::new(),
+        }
+    }
+}

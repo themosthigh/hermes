@@ -1,12 +1,16 @@
+use std::sync::Arc;
+
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 use sourceview5::prelude::*;
 
+use crate::request::RequestState;
 use crate::utils::sourceview::init_source_buffer;
+use crate::utils::store::LocalStore;
 
 #[derive(Debug)]
 pub struct Model {
-    request_body: String,
+    request_store: Init,
     source_buffer: sourceview5::Buffer,
 }
 
@@ -20,9 +24,7 @@ pub enum Output {
     UpdateRequestBody(String),
 }
 
-pub struct Init {
-    pub request_body: String,
-}
+pub type Init = Arc<LocalStore<RequestState>>;
 
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
@@ -56,10 +58,12 @@ impl SimpleComponent for Model {
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let model = Model {
-            request_body: init.request_body,
+            request_store: init,
             source_buffer: init_source_buffer(),
         };
-        model.source_buffer.set_text(&model.request_body);
+        model
+            .source_buffer
+            .set_text(&model.request_store.get_current().body);
 
         // Add on_change event to update buffer state
         model.source_buffer.connect_changed(move |buffer| {
@@ -73,11 +77,12 @@ impl SimpleComponent for Model {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::RequestBodyChanged(request_body) => {
-                self.request_body = request_body;
-                let _ = sender.output(Output::UpdateRequestBody(self.request_body.clone()));
+                self.request_store.update(|request_state| {
+                    request_state.body = request_body;
+                });
             }
         }
     }

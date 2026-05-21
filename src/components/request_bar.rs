@@ -7,11 +7,13 @@ use crate::{
     utils::{shortcut::register_shortcut, store::LocalStore},
 };
 
+pub type Init = Arc<LocalStore<RequestState>>;
+
 #[derive(Debug, Clone)]
 pub struct Model {
     pub url: String,
     pub method: String,
-    pub request_store: Arc<LocalStore<RequestState>>,
+    pub request_store: Init,
 }
 
 #[derive(Debug)]
@@ -29,13 +31,12 @@ pub struct OutputData {
 
 #[derive(Debug)]
 pub enum Output {
-    Send,
-    UpdateRequestFromBar(OutputData),
+    EmitSend,
 }
 
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
-    type Init = Model;
+    type Init = Init;
     type Input = Msg;
     type Output = Output;
 
@@ -68,7 +69,7 @@ impl SimpleComponent for Model {
                     sender.input(Msg::UrlChanged(text));
                 },
                 connect_activate[sender] => move |_entry| {
-                    let _ = sender.output(Output::Send);
+                    let _ = sender.output(Output::EmitSend);
                 },
                 inline_css: "border-radius: 0px"
             },
@@ -83,11 +84,17 @@ impl SimpleComponent for Model {
     }
 
     fn init(
-        intial_values: Self::Init,
+        request_store: Self::Init,
         root: Self::Root,
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
-        let model = intial_values;
+        // Initialise Model
+        let model = Model {
+            url: request_store.get_current().url.clone(),
+            method: String::from("GET"),
+            request_store: request_store.clone(),
+        };
+
         let widgets = view_output!();
 
         // Focus entry on ctrl+l
@@ -98,7 +105,7 @@ impl SimpleComponent for Model {
 
         // Send request on ctrl+r
         register_shortcut(&root, "send_request", "<Control>r", move || {
-            let _ = sender.output(Output::Send);
+            let _ = sender.output(Output::EmitSend);
         });
 
         ComponentParts { model, widgets }
@@ -107,24 +114,19 @@ impl SimpleComponent for Model {
     fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::Send => {
-                let _ = sender.output(Output::Send);
+                let _ = sender.output(Output::EmitSend);
             }
             Msg::UrlChanged(url) => {
                 self.url = url;
-                let _ = sender.output(Output::UpdateRequestFromBar(OutputData {
-                    url: self.url.clone(),
-                    method: self.method.clone(),
-                }));
                 self.request_store.update(|request_state| {
                     request_state.url = self.url.clone();
                 });
             }
             Msg::MethodChanged(method) => {
                 self.method = method;
-                let _ = sender.output(Output::UpdateRequestFromBar(OutputData {
-                    url: self.url.clone(),
-                    method: self.method.clone(),
-                }));
+                self.request_store.update(|request_state| {
+                    request_state.method = self.method.clone();
+                });
             }
         }
     }

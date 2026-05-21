@@ -29,6 +29,14 @@ impl SimpleComponent for Model {
     view! {
         adw::HeaderBar {
             set_title_widget = Some(&model.label_widget),
+            /*
+            pack_start = &gtk::Button {
+                set_label: "Import",
+                connect_clicked => move |_| {
+                    println!("Importing")
+                }
+            }
+            */
         }
     }
 
@@ -37,22 +45,17 @@ impl SimpleComponent for Model {
         _window: Self::Root,
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
+        let label = gtk::Label::new(Some("Hermes"));
+        label.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+
         let model = Model {
             request_store: init.request_store,
-            label_widget: gtk::Label::new(Some("Hermes ++")),
+            label_widget: label,
         };
 
-        let (channel_sender, channel_receiver) = relm4::channel::<RequestState>();
-        model.request_store.subscribe(channel_sender);
-
-        let input_sender = sender.input_sender().clone();
-        relm4::spawn_local(async move {
-            while let Some(request_state) = channel_receiver.recv().await {
-                input_sender
-                    .send(Msg::UpdateTitle(request_state.url))
-                    .unwrap();
-            }
-        });
+        model
+            .request_store
+            .connect(&sender, |state| Msg::UpdateTitle(state.url));
 
         let widgets = view_output!();
         ComponentParts { model, widgets }
