@@ -5,7 +5,7 @@ use relm4::prelude::*;
 use sourceview5::prelude::*;
 
 use crate::request::RequestState;
-use crate::utils::sourceview::init_source_buffer;
+use crate::utils::sourceview::{SourceBufferOptions, init_source_buffer};
 use crate::utils::store::LocalStore;
 
 #[derive(Debug)]
@@ -59,7 +59,7 @@ impl SimpleComponent for Model {
     ) -> relm4::ComponentParts<Self> {
         let model = Model {
             request_store: init,
-            source_buffer: init_source_buffer(),
+            source_buffer: init_source_buffer(Some(SourceBufferOptions { language: "json" })),
         };
         model
             .source_buffer

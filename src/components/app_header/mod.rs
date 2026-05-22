@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
-use relm4::prelude::*;
+use relm4::{gtk::prelude::*, prelude::*};
 
 use crate::{request::RequestState, utils::store::LocalStore};
+
+mod request_option_dropdown;
 
 #[derive(Debug)]
 pub struct Model {
     request_store: Arc<LocalStore<RequestState>>,
+    request_option_dropdown_widget: Controller<request_option_dropdown::Model>,
     label_widget: gtk::Label,
 }
 
@@ -29,14 +32,18 @@ impl SimpleComponent for Model {
     view! {
         adw::HeaderBar {
             set_title_widget = Some(&model.label_widget),
-            /*
-            pack_start = &gtk::Button {
-                set_label: "Import",
-                connect_clicked => move |_| {
-                    println!("Importing")
-                }
-            }
-            */
+
+            // pack_start = &gtk::Button {
+            //     set_label: "Import",
+            //     connect_clicked => move |_| {
+            //         println!("Importing")
+            //     }
+            // },
+
+            pack_end = &gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                append = model.request_option_dropdown_widget.widget(),
+            },
         }
     }
 
@@ -49,8 +56,11 @@ impl SimpleComponent for Model {
         label.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
 
         let model = Model {
-            request_store: init.request_store,
+            request_store: init.request_store.clone(),
             label_widget: label,
+            request_option_dropdown_widget: request_option_dropdown::Model::builder()
+                .launch(init.request_store)
+                .detach(),
         };
 
         model

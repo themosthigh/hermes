@@ -79,7 +79,6 @@ impl SimpleComponent for Model {
                 connect_clicked => Msg::Send,
                 add_css_class: "send-button",
             }
-
         }
     }
 

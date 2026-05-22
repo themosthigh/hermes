@@ -1,10 +1,20 @@
 use adw::glib::clone;
 use sourceview5::prelude::*;
 
-pub fn init_source_buffer() -> sourceview5::Buffer {
+pub struct SourceBufferOptions<'a> {
+    pub language: &'a str,
+}
+
+pub fn init_source_buffer(options: Option<SourceBufferOptions>) -> sourceview5::Buffer {
     let buffer = sourceview5::Buffer::new(None);
     let lang_manager = sourceview5::LanguageManager::default();
-    if let Some(rust_lang) = lang_manager.language("json") {
+
+    let language = match options {
+        Some(opts) => opts.language,
+        None => "txt",
+    };
+
+    if let Some(rust_lang) = lang_manager.language(language) {
         buffer.set_language(Some(&rust_lang));
     }
     update_buffer_theme(&buffer);

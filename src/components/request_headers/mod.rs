@@ -61,6 +61,9 @@ impl SimpleComponent for Model {
                         set_halign: gtk::Align::Center,
                         set_valign: gtk::Align::Center,
                         add_css_class: "suggested-action",
+                        add_css_class: "large",
+                        add_css_class: "pill",
+                        set_width_request: 120,
                         connect_clicked => Msg::AddHeader,
                     },
                 }

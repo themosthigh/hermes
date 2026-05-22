@@ -55,7 +55,7 @@ impl SimpleComponent for Model {
     ) -> relm4::ComponentParts<Self> {
         let model = Model {
             response_store: init,
-            source_buffer: init_source_buffer(),
+            source_buffer: init_source_buffer(None),
         };
         let widgets = view_output!();
 

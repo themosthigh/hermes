@@ -18,6 +18,7 @@ impl SimpleComponent for Model {
     type Output = ();
 
     view! {
+        #[root]
         adw::ApplicationWindow {
             set_title: Some("Hermes"),
             set_size_request: (350, 500),
