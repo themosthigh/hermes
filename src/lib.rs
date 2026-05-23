@@ -3,6 +3,7 @@ pub mod request;
 pub mod utils;
 
 pub mod icon_names {
+    #[allow(unused)]
     use shipped::*;
     include!(concat!(env!("OUT_DIR"), "/icon_names.rs"));
 }

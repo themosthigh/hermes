@@ -12,6 +12,7 @@ pub type Init = Arc<LocalStore<RequestState>>;
 #[derive(Debug, Clone)]
 pub struct Model {
     pub url: String,
+    pub url_buffer: gtk::EntryBuffer,
     pub method: String,
     pub request_store: Init,
 }
@@ -66,7 +67,7 @@ impl SimpleComponent for Model {
             #[name="url_entry"]
             gtk::Entry {
                 set_placeholder_text: Some("Enter URL ..."),
-                set_text: &model.url,
+                set_buffer: &model.url_buffer,
                 set_hexpand: true,
                 connect_changed[sender] => move |entry| {
                     let text = entry.text().to_string();
@@ -87,7 +88,9 @@ impl SimpleComponent for Model {
     }
 
     fn post_view() {
-        if model.request_store.get_source() != String::from(THIS_SOURCE) {
+        if model.request_store.get_source() != String::from(THIS_SOURCE)
+            && model.request_store.get_current().url != model.url
+        {
             widgets
                 .url_entry
                 .set_text(model.request_store.get_current().url.as_str());
@@ -95,18 +98,21 @@ impl SimpleComponent for Model {
     }
 
     fn init(
-        request_store: Self::Init,
+        init: Self::Init,
         root: Self::Root,
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         // Initialise Model
         let model = Model {
-            url: request_store.get_current().url.clone(),
+            url: String::new(),
+            url_buffer: gtk::EntryBuffer::new(Some(init.clone().get_current().url)),
             method: String::from("GET"),
-            request_store: request_store.clone(),
+            request_store: init.clone(),
         };
 
         let widgets = view_output!();
+
+        widgets.url_entry.set_text(init.get_current().url.as_str());
 
         // Focus entry on ctrl+l
         {
@@ -128,7 +134,7 @@ impl SimpleComponent for Model {
 
         // listen for store updates
         let sender = sender.clone();
-        request_store.connect(&sender, Msg::StoreValueChanged);
+        init.connect(&sender, Msg::StoreValueChanged);
 
         ComponentParts { model, widgets }
     }
@@ -158,8 +164,9 @@ impl SimpleComponent for Model {
             }
             Msg::StoreValueChanged(new_state) => {
                 if self.request_store.get_source() != String::from(THIS_SOURCE) {
-                    self.url = new_state.url;
+                    self.url = new_state.url.clone();
                     self.method = new_state.method;
+                    self.url_buffer.set_text(new_state.url);
                 }
             }
         }

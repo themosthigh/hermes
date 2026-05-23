@@ -1,15 +1,19 @@
+use std::sync::Arc;
+
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 
 mod request_header_input;
 use request_header_input as header_input;
 
-use crate::request::RequestHeader;
+use crate::request::{RequestHeader, RequestState};
+use crate::utils::store::LocalStore;
 
 #[derive(Debug)]
 pub struct Model {
-    headers: Vec<RequestHeader>,
     header_input_widgets: FactoryVecDeque<header_input::Model>,
+    request_store: Init,
+    headers: Vec<RequestHeader>,
 }
 
 #[derive(Debug)]
@@ -17,19 +21,17 @@ pub enum Msg {
     HeadersChanged(Vec<RequestHeader>),
     HeaderChanged(usize, RequestHeader),
     AddHeader,
-    SendHeadersToParent,
 }
 
-#[derive(Debug, Clone)]
-pub enum Output {
-    EmitHeadersChanged(Vec<RequestHeader>),
-}
+pub type Init = Arc<LocalStore<RequestState>>;
+
+const THIS_SOURCE: &str = "request-headers";
 
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
-    type Init = Vec<RequestHeader>;
+    type Init = Init;
     type Input = Msg;
-    type Output = Output;
+    type Output = ();
 
     view! {
         gtk::ScrolledWindow {
@@ -88,47 +90,62 @@ impl SimpleComponent for Model {
             // Initialize header input widgets
             let mut guard = header_input_widgets.guard();
             guard.clear();
-            for header in &init {
+            for header in &init.get_current().headers {
                 guard.push_back(header.clone());
             }
         };
 
         let model = Model {
-            headers: init,
             header_input_widgets,
+            request_store: init.clone(),
+            headers: init.get_current().headers,
         };
 
         let headers_list_box = model.header_input_widgets.widget();
         let widgets = view_output!();
 
+        {
+            let sender_clone = sender.clone();
+            model.request_store.connect(&sender_clone, |new_state| {
+                Msg::HeadersChanged(new_state.headers)
+            });
+        }
+
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, message: Self::Input, sender: relm4::ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::HeaderChanged(index, header) => {
-                self.headers[index] = header;
-                let _ = sender.output(Output::EmitHeadersChanged(self.headers.clone()));
+                self.request_store
+                    .update_source(String::from(THIS_SOURCE))
+                    .update(|state| {
+                        state.headers[index] = header;
+                    });
             }
             Msg::HeadersChanged(headers) => {
-                self.headers = headers;
-                let mut guard = self.header_input_widgets.guard();
-                guard.clear();
+                if self.request_store.get_source() != String::from(THIS_SOURCE)
+                    || self.headers.len() != self.request_store.get_current().headers.len()
+                {
+                    self.headers = self.request_store.get_current().headers;
+                    let mut guard = self.header_input_widgets.guard();
+                    guard.clear();
 
-                for header in &self.headers {
-                    guard.push_back(header.clone());
+                    for header in headers {
+                        guard.push_back(header.clone());
+                    }
                 }
             }
             Msg::AddHeader => {
-                self.headers.push(RequestHeader {
-                    name: String::new(),
-                    value: String::new(),
-                    enabled: true,
-                });
-                sender.input(Msg::HeadersChanged(self.headers.clone()));
-            }
-            Msg::SendHeadersToParent => {
-                let _ = sender.output(Output::EmitHeadersChanged(self.headers.clone()));
+                self.request_store
+                    .update_source(String::from(THIS_SOURCE))
+                    .update(|state| {
+                        state.headers.push(RequestHeader {
+                            name: String::new(),
+                            value: String::new(),
+                            enabled: true,
+                        });
+                    });
             }
         }
     }

@@ -105,30 +105,8 @@ impl SimpleComponent for Model {
         sender: relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let request = RequestState::default();
-        let request_store = Arc::new(LocalStore::new(request.clone()));
+        let request_store = Arc::new(LocalStore::new(request));
         let response_store = Arc::new(LocalStore::new(ResponseState::default()));
-
-        let req = request_bar::Model::builder()
-            .launch(request_store.clone())
-            .forward(sender.input_sender(), |req_output| match req_output {
-                request_bar::Output::EmitSend => Msg::SendRequest,
-            });
-
-        let req_body = request_body::Model::builder()
-            .launch(request_store.clone())
-            .detach();
-
-        let request_headers_widget = request_headers::Model::builder()
-            .launch(request.headers.clone())
-            .detach();
-
-        let res = response_preview::Model::builder()
-            .launch(response_store.clone())
-            .detach();
-
-        let res_headers = response_headers::Model::builder()
-            .launch(response_store.clone())
-            .detach();
 
         // Initialise Main Content Model
         let model = Model {
@@ -137,12 +115,29 @@ impl SimpleComponent for Model {
                     request_store: request_store.clone(),
                 })
                 .detach(),
-            request_bar_widget: req,
-            request_body_widget: req_body,
-            request_headers_widget,
+
+            request_bar_widget: request_bar::Model::builder()
+                .launch(request_store.clone())
+                .forward(sender.input_sender(), |req_output| match req_output {
+                    request_bar::Output::EmitSend => Msg::SendRequest,
+                }),
+
+            request_body_widget: request_body::Model::builder()
+                .launch(request_store.clone())
+                .detach(),
+
+            request_headers_widget: request_headers::Model::builder()
+                .launch(request_store.clone())
+                .detach(),
+
             request_params_widget: request_params::Model::builder().launch(()).detach(),
-            response_headers_widget: res_headers,
-            response_preview_widget: res,
+            response_headers_widget: response_headers::Model::builder()
+                .launch(response_store.clone())
+                .detach(),
+            response_preview_widget: response_preview::Model::builder()
+                .launch(response_store.clone())
+                .detach(),
+
             // stores
             request_store: request_store.clone(),
             response_store: response_store.clone(),
@@ -200,11 +195,16 @@ impl SimpleComponent for Model {
     fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::SendRequest => {
-                // Show loading state
                 let req = self.request_store.get_current();
+                println!("Request debug {:?}", req);
+
+                // Show loading state
+                self.response_store.update(|state| {
+                    state.body = String::from("Loading ....");
+                    state.headers = Vec::new();
+                });
 
                 // Send request
-
                 let handle = Handle::current();
                 let result = handle.block_on(async { send_request(req).await });
                 self.response_store.update(|state| {

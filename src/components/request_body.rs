@@ -12,11 +12,13 @@ use crate::utils::store::LocalStore;
 pub struct Model {
     request_store: Init,
     source_buffer: sourceview5::Buffer,
+    current_buffer_text: String,
 }
 
 #[derive(Debug)]
 pub enum Msg {
     RequestBodyChanged(String),
+    RequestStateChanged(RequestState),
 }
 
 #[derive(Debug)]
@@ -25,6 +27,8 @@ pub enum Output {
 }
 
 pub type Init = Arc<LocalStore<RequestState>>;
+
+const THIS_SOURCE: &str = "request-body";
 
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
@@ -60,18 +64,30 @@ impl SimpleComponent for Model {
         let model = Model {
             request_store: init,
             source_buffer: init_source_buffer(Some(SourceBufferOptions { language: "json" })),
+            current_buffer_text: String::new(),
         };
         model
             .source_buffer
             .set_text(&model.request_store.get_current().body);
 
         // Add on_change event to update buffer state
-        model.source_buffer.connect_changed(move |buffer| {
-            let start = buffer.start_iter();
-            let end = buffer.end_iter();
-            let text = buffer.text(&start, &end, true).to_string();
-            sender.input(Msg::RequestBodyChanged(text));
-        });
+        {
+            let sender_clone = sender.clone();
+            model.source_buffer.connect_changed(move |buffer| {
+                let start = buffer.start_iter();
+                let end = buffer.end_iter();
+                let text = buffer.text(&start, &end, true).to_string();
+                sender_clone.input(Msg::RequestBodyChanged(text));
+            });
+        }
+
+        // Listen for external updates
+        {
+            let sender_clone = sender.clone();
+            model
+                .request_store
+                .connect(&sender_clone, Msg::RequestStateChanged);
+        }
 
         let widgets = view_output!();
         ComponentParts { model, widgets }
@@ -80,9 +96,20 @@ impl SimpleComponent for Model {
     fn update(&mut self, message: Self::Input, _sender: relm4::ComponentSender<Self>) {
         match message {
             Msg::RequestBodyChanged(request_body) => {
-                self.request_store.update(|request_state| {
-                    request_state.body = request_body;
-                });
+                self.current_buffer_text = request_body.clone();
+                self.request_store
+                    .update_source(String::from(THIS_SOURCE))
+                    .update(|request_state| {
+                        request_state.body = request_body;
+                    });
+            }
+
+            Msg::RequestStateChanged(new_state) => {
+                if self.request_store.get_source() != String::from(THIS_SOURCE)
+                    && self.current_buffer_text != new_state.body
+                {
+                    self.source_buffer.set_text(&new_state.body);
+                }
             }
         }
     }
