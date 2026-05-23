@@ -21,6 +21,7 @@ pub enum Msg {
     Send,
     UrlChanged(String),
     MethodChanged(String),
+    StoreValueChanged(RequestState),
 }
 
 #[derive(Debug)]
@@ -34,6 +35,8 @@ pub enum Output {
     EmitSend,
 }
 
+const THIS_SOURCE: &str = "request-bar";
+
 #[relm4::component(pub)]
 impl SimpleComponent for Model {
     type Init = Init;
@@ -45,6 +48,7 @@ impl SimpleComponent for Model {
             set_orientation: gtk::Orientation::Horizontal,
             add_css_class : "response-bar",
 
+            #[name="method_dropdown"]
             gtk::DropDown {
                 add_css_class: "method-dropdown",
                 set_model: Some(gtk::StringList::new(METHODS).upcast_ref::<gtk::gio::ListModel>()),
@@ -59,14 +63,14 @@ impl SimpleComponent for Model {
                 },
             },
 
-            #[name="entry"]
+            #[name="url_entry"]
             gtk::Entry {
                 set_placeholder_text: Some("Enter URL ..."),
                 set_text: &model.url,
                 set_hexpand: true,
                 connect_changed[sender] => move |entry| {
                     let text = entry.text().to_string();
-                    sender.input(Msg::UrlChanged(text));
+                        sender.input(Msg::UrlChanged(text));
                 },
                 connect_activate[sender] => move |_entry| {
                     let _ = sender.output(Output::EmitSend);
@@ -79,6 +83,14 @@ impl SimpleComponent for Model {
                 connect_clicked => Msg::Send,
                 add_css_class: "send-button",
             }
+        },
+    }
+
+    fn post_view() {
+        if model.request_store.get_source() != String::from(THIS_SOURCE) {
+            widgets
+                .url_entry
+                .set_text(model.request_store.get_current().url.as_str());
         }
     }
 
@@ -97,15 +109,26 @@ impl SimpleComponent for Model {
         let widgets = view_output!();
 
         // Focus entry on ctrl+l
-        let entry_clone = widgets.entry.clone();
-        register_shortcut(&root, "focus_entry", "<Control>l", move || {
-            entry_clone.grab_focus();
-        });
+        {
+            let entry_clone = widgets.url_entry.clone();
+            let root = root.clone();
+            register_shortcut(&root, "focus_entry", "<Control>l", move || {
+                entry_clone.grab_focus();
+            });
+        }
 
         // Send request on ctrl+r
-        register_shortcut(&root, "send_request", "<Control>r", move || {
-            let _ = sender.output(Output::EmitSend);
-        });
+        {
+            let sender = sender.clone();
+            let root = root.clone();
+            register_shortcut(&root, "send_request", "<Control>r", move || {
+                let _ = sender.output(Output::EmitSend);
+            });
+        }
+
+        // listen for store updates
+        let sender = sender.clone();
+        request_store.connect(&sender, Msg::StoreValueChanged);
 
         ComponentParts { model, widgets }
     }
@@ -116,16 +139,28 @@ impl SimpleComponent for Model {
                 let _ = sender.output(Output::EmitSend);
             }
             Msg::UrlChanged(url) => {
-                self.url = url;
-                self.request_store.update(|request_state| {
-                    request_state.url = self.url.clone();
-                });
+                if url != self.url {
+                    self.request_store
+                        .update_source(String::from(THIS_SOURCE))
+                        .update(|request_state| {
+                            request_state.url = url;
+                        });
+                }
             }
             Msg::MethodChanged(method) => {
-                self.method = method;
-                self.request_store.update(|request_state| {
-                    request_state.method = self.method.clone();
-                });
+                if method != self.method {
+                    self.request_store
+                        .update_source(String::from(THIS_SOURCE))
+                        .update(|request_state| {
+                            request_state.method = method;
+                        });
+                }
+            }
+            Msg::StoreValueChanged(new_state) => {
+                if self.request_store.get_source() != String::from(THIS_SOURCE) {
+                    self.url = new_state.url;
+                    self.method = new_state.method;
+                }
             }
         }
     }

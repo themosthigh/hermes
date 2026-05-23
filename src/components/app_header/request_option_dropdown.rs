@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Model {
-    curl_import_dialog_ctrlr: Controller<curl_import_dialog::Model>,
+    _curl_import_dialog_ctrlr: Controller<curl_import_dialog::Model>,
 }
 
 pub type Init = Arc<LocalStore<RequestState>>;
@@ -61,14 +61,14 @@ impl SimpleComponent for Model {
         let about = "About Hermes";
         let quit = "Quit";
 
-        let curl_import_dialog_ctrlr = curl_import_dialog::Model::builder()
+        let dialog_controller = curl_import_dialog::Model::builder()
             .launch(init.clone())
             .detach();
 
         let mut actions = RelmActionGroup::<WindowActionGroup>::new();
 
         let root_clone = root.clone();
-        let dialog_widget = curl_import_dialog_ctrlr.widget().clone();
+        let dialog_widget = dialog_controller.widget().clone();
         let import_curl_action = {
             RelmAction::<OpenImportCurlDialog>::new_stateless(move |_| {
                 dialog_widget.present(Some(&root_clone));
@@ -81,7 +81,7 @@ impl SimpleComponent for Model {
 
         let widgets = view_output!();
         let model = Model {
-            curl_import_dialog_ctrlr,
+            _curl_import_dialog_ctrlr: dialog_controller,
         };
 
         ComponentParts { model, widgets }

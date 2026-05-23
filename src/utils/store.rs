@@ -5,6 +5,7 @@ use std::sync::RwLock;
 #[derive(Debug)]
 pub struct LocalStore<T> {
     pub data: RwLock<T>,
+    pub source: RwLock<String>,
 
     // Holds a pool of update senders tied to child event loops
     pub subscribers: RwLock<Vec<Sender<T>>>,
@@ -15,11 +16,16 @@ impl<T: Clone + 'static + Debug + Send> LocalStore<T> {
         Self {
             data: RwLock::new(initial),
             subscribers: RwLock::new(Vec::new()),
+            source: RwLock::new(String::new()),
         }
     }
 
     pub fn get_current(&self) -> T {
         self.data.read().unwrap().clone()
+    }
+
+    pub fn get_source(&self) -> String {
+        self.source.read().unwrap().clone()
     }
 
     // Automatic updates
@@ -37,6 +43,14 @@ impl<T: Clone + 'static + Debug + Send> LocalStore<T> {
         for subscriber in self.subscribers.read().unwrap().iter() {
             subscriber.send(current_data.clone()).unwrap();
         }
+    }
+
+    pub fn update_source(&self, source: String) -> &Self {
+        {
+            let mut data_guard = self.source.write().unwrap();
+            *data_guard = source;
+        };
+        self
     }
 
     // Subcribe hook for children

@@ -111,13 +111,14 @@ impl SimpleComponent for Model {
             },
 
             Msg::UpdateRequest(new_state) => {
-                println!("State updated");
-                self.request_store.update(|state| {
-                    state.url = new_state.url;
-                    state.method = new_state.method;
-                    state.body = new_state.body;
-                    state.headers = new_state.headers;
-                });
+                self.request_store
+                    .update_source(String::from("curl-input"))
+                    .update(|state| {
+                        state.url = new_state.url;
+                        state.method = new_state.method;
+                        state.body = new_state.body;
+                        state.headers = new_state.headers;
+                    });
             }
         }
     }

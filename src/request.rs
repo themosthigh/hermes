@@ -44,8 +44,7 @@ impl Default for RequestState {
 
 impl RequestState {
     pub fn from_curl(text: &str) -> Result<Self, String> {
-        println!("Input {text}");
-        match ParsedRequest::from_str(text) {
+        match ParsedRequest::from_str(text.trim()) {
             Ok(parsed_request) => Ok(Self {
                 url: parsed_request.url.to_string(),
                 method: parsed_request.method.to_string(),
