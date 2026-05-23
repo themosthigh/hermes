@@ -11,7 +11,7 @@ This is a continuation of the [pat](https://github.com/themosthigh/pat) project 
 1. Postman froze my friend's macbook. MacOS skill issue to be honest
 2. There are many beautiful and very funciton Electron-base solutions that take up +250MB of my storage
 3. I don't have friends and ...
-4. I needed something to do for the weekend. 
+4. I needed something to do for the weekend.
 
 ## Project setup
 
@@ -43,19 +43,48 @@ brew install gtk4 libadwaita meson desktop-file-utils gtksourceview5
 cargo run # obviously
 ```
 
-
 ## Progress so far
 
 I cannot stress this enough, I've been tempted to quit and opt for a different solution such as [gtkx](https://gtkx.dev/) or [flutter](https://flutter.dev).
 Rust + GTK is a tall order. That said, we have the following working:
 
-- Custom url
-- Custom request methods
-- Custom headers (not the best experience but we're getting somewhere)
-- Custom JSON body
+#### Request manipulation
 
+- [x] Custom url
+- [x] Custom request methods
+- [x] Custom headers (not the best experience but we're getting somewhere)
+- [x] Custom JSON body
+- [ ] Query params tracking
+- [ ] File requests
+- [ ] Custom request body
+  - [ ] Change type
+  - [ ] Update formatting
+
+#### Data exporting
+
+- [ ] Import request
+  - [x] Paste `cURL`
+  - [ ] `.http` file
+  - [ ] `.rest` file
+- [ ] Export request
+  - [ ] `cURL` string
+  - [ ] Save as `.http` file
+  - [ ] Save as `.rest` file
+
+#### Response presentation
+
+- [ ] Custom repsonse type
+- [ ] Trigger formatting
+
+#### Quality of life features
+
+- [ ] Global keyboard shortcuts
+- [ ] Open workspaces
+- [ ] Environment variable support
+- [ ] Multiple windows
+- [ ] Multiple tabs
+- [ ] Home Screen based on history
 
 <img width="1837" height="1151" alt="Screenshot From 2026-05-17 23-50-08-min" src="https://github.com/user-attachments/assets/97539551-2d31-40b1-95d4-b9f0a9b5ebb2" />
-
 
 The goal here is to get somewhere between [HTTPie](https://httpie.io/) and [Cartero](https://cartero.danirod.es/)
