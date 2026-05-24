@@ -1,1 +1,1 @@
-pub const ICONS: &[&str] = &["plus", "cross", "menu"];
+pub const ICONS: &[&str] = &["plus", "cross", "menu", "code"];

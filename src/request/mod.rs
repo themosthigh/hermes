@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
-use curl_parser::ParsedRequest;
-
 pub const METHODS: &[&str] = &["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+
+mod parsers;
 
 #[derive(Debug, Clone)]
 pub struct RequestHeader {
@@ -38,29 +36,6 @@ impl Default for RequestState {
                 },
             ],
             body: String::new(),
-        }
-    }
-}
-
-impl RequestState {
-    pub fn from_curl(text: &str) -> Result<Self, String> {
-        match ParsedRequest::from_str(text.trim()) {
-            Ok(parsed_request) => Ok(Self {
-                url: parsed_request.url.to_string(),
-                method: parsed_request.method.to_string(),
-                headers: parsed_request
-                    .headers
-                    .iter()
-                    .map(|header| RequestHeader {
-                        name: header.0.to_string(),
-                        value: header.1.to_str().unwrap().to_string(),
-                        enabled: true,
-                    })
-                    .collect(),
-                body: parsed_request.body.join("\n"),
-            }),
-
-            Err(e) => Err(e.to_string()),
         }
     }
 }

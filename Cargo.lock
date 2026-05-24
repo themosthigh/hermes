@@ -9,6 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "aho-corasick"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddd31a130427c27518df266943a5308ed92d4b226cc639f5a8f1002816174301"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -213,7 +222,7 @@ checksum = "a99089a47203c874d79c3d247a5f402e310e0e8c7e6f8f22b4bb25c522d02de5"
 dependencies = [
  "base64",
  "form_urlencoded",
- "http",
+ "http 1.4.0",
  "minijinja",
  "pest",
  "pest_derive",
@@ -754,7 +763,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http",
+ "http 1.4.0",
  "indexmap",
  "slab",
  "tokio",
@@ -780,6 +789,7 @@ version = "0.0.5"
 dependencies = [
  "curl-parser",
  "gobject-sys",
+ "http-rest-file",
  "libadwaita",
  "relm4",
  "relm4-components",
@@ -789,6 +799,17 @@ dependencies = [
  "serde_json",
  "sourceview5",
  "tokio",
+]
+
+[[package]]
+name = "http"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
 ]
 
 [[package]]
@@ -808,7 +829,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http",
+ "http 1.4.0",
 ]
 
 [[package]]
@@ -819,9 +840,23 @@ checksum = "b021d93e26becf5dc7e1b75b1bed1fd93124b374ceb73f43d4d4eafec896a64a"
 dependencies = [
  "bytes",
  "futures-core",
- "http",
+ "http 1.4.0",
  "http-body",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-rest-file"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92d2f9d7798b724494ce3c33694afb86fb67bc33bcd03877c6f38953a180c05f"
+dependencies = [
+ "http 0.2.12",
+ "regex",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "url",
 ]
 
 [[package]]
@@ -841,7 +876,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "h2",
- "http",
+ "http 1.4.0",
  "http-body",
  "httparse",
  "itoa",
@@ -857,7 +892,7 @@ version = "0.27.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33ca68d021ef39cf6463ab54c1d0f5daf03377b70561305bb89a8f83aab66e0f"
 dependencies = [
- "http",
+ "http 1.4.0",
  "hyper",
  "hyper-util",
  "rustls",
@@ -876,7 +911,7 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "http",
+ "http 1.4.0",
  "http-body",
  "hyper",
  "ipnet",
@@ -1028,7 +1063,7 @@ dependencies = [
  "jni-sys",
  "log",
  "simd_cesu8",
- "thiserror",
+ "thiserror 2.0.18",
  "walkdir",
  "windows-link",
 ]
@@ -1390,7 +1425,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror",
+ "thiserror 2.0.18",
  "tokio",
  "tracing",
  "web-time",
@@ -1412,7 +1447,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror",
+ "thiserror 2.0.18",
  "tinyvec",
  "tracing",
  "web-time",
@@ -1484,6 +1519,35 @@ checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
 dependencies = [
  "bitflags",
 ]
+
+[[package]]
+name = "regex"
+version = "1.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e10754a14b9137dd7b1e3e5b0493cc9171fdd105e0ab477f51b72e7f3ac0e276"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e1dd4122fc1595e8162618945476892eefca7b88c52820e74af6262213cae8f"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
 name = "relm4"
@@ -1563,7 +1627,7 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "h2",
- "http",
+ "http 1.4.0",
  "http-body",
  "http-body-util",
  "hyper",
@@ -2028,11 +2092,31 @@ checksum = "df7f62577c25e07834649fc3b39fafdc597c0a3527dc1c60129201ccfcbaa50c"
 
 [[package]]
 name = "thiserror"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
+dependencies = [
+ "thiserror-impl 1.0.69",
+]
+
+[[package]]
+name = "thiserror"
 version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4288b5bcbc7920c07a1149a35cf9590a2aa808e0bc1eafaade0b80947865fbc4"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 2.0.18",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.69"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2197,7 +2281,7 @@ dependencies = [
  "bitflags",
  "bytes",
  "futures-util",
- "http",
+ "http 1.4.0",
  "http-body",
  "pin-project-lite",
  "tower",
