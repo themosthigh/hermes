@@ -55,7 +55,7 @@ impl SimpleComponent for Model {
         };
         let widgets = view_output!();
 
-        register_shortcut(&root, "new-window", "<Control>n", move || {
+        register_shortcut(&root, "new-window", "<Primary>n", move || {
             sender.input(Message::NewWindow);
         });
 

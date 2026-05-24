@@ -118,7 +118,7 @@ impl SimpleComponent for Model {
         {
             let entry_clone = widgets.url_entry.clone();
             let root = root.clone();
-            register_shortcut(&root, "focus_entry", "<Control>l", move || {
+            register_shortcut(&root, "focus_entry", "<Primary>l", move || {
                 entry_clone.grab_focus();
             });
         }
@@ -127,7 +127,8 @@ impl SimpleComponent for Model {
         {
             let sender = sender.clone();
             let root = root.clone();
-            register_shortcut(&root, "send_request", "<Control>r", move || {
+            register_shortcut(&root, "send_request", "<Primary>r", move || {
+                println!("Running");
                 let _ = sender.output(Output::EmitSend);
             });
         }
