@@ -34,7 +34,7 @@ sudo pacman -S gtk4 libadwaita meson desktop-file-utils pkg-config
 On macos you will need to run this verbatim
 
 ```sh
-brew install gtk4 libadwaita meson desktop-file-utils gtksourceview5
+brew install gtk4 libadwaita meson desktop-file-utils pkg-config gtksourceview5
 ```
 
 ## Running the project
@@ -64,7 +64,7 @@ Rust + GTK is a tall order. That said, we have the following working:
 
 - [ ] Import request
   - [x] Paste `cURL`
-  - [ ] `.http` file
+  - [x] `.http` file
   - [ ] `.rest` file
 - [ ] Export request
   - [ ] `cURL` string
